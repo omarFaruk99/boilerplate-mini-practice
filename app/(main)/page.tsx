@@ -1,9 +1,9 @@
-import React from 'react';
+import ServiceGiversList from "../components/ServiceGiversList";
 
 const HomePage = () => {
     return (
         <div className="card">
-            Start work here
+            <ServiceGiversList />
         </div>
     );
 };

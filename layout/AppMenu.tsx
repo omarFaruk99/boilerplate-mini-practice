@@ -1,4 +1,4 @@
-import type {MenuModel} from "@/types";
+import type { MenuModel } from "@/types";
 import AppSubMenu from "./AppSubMenu";
 
 const AppMenu = () => {
@@ -12,8 +12,13 @@ const AppMenu = () => {
                     icon: "pi pi-fw pi-home",
                     to: "/",
                 },
+                {
+                    label: "Add Service",
+                    icon: "pi pi-fw pi-plus-circle",
+                    to: "/add-service", // New route for the form
+                },
             ],
-        }
+        },
         // {
         //     label: "Apps",
         //     icon: "pi pi-th-large",
@@ -31,11 +36,9 @@ const AppMenu = () => {
         //         },
         //     ]
         // },
-
-
     ];
 
-    return <AppSubMenu model={model}/>;
+    return <AppSubMenu model={model} />;
 };
 
 export default AppMenu;
