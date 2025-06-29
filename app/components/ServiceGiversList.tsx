@@ -12,7 +12,7 @@ const ServiceGiversList: React.FC = () => {
     if (!data || !data.data.length) return <div>No service givers found.</div>;
 
     return (
-        <div className="card">
+        <div>
             <h2>Service Givers</h2>
             <DataTable
                 value={data.data}

@@ -122,21 +122,24 @@ const ServiceGiverForm = () => {
         }
     };
 
-    // Handle multiple profile photo uploads with validation
+    // Handle single profile photo upload with validation
     const onProfilePhotoUpload = (event: FileUploadSelectEvent) => {
         const files = event.files || [];
-        const validFiles = files.filter((file) => {
+        const file = files[0];
+        if (file) {
             if (file.size > 2 * 1024 * 1024) {
                 toast.current?.show({
                     severity: "error",
                     summary: "File Too Large",
                     detail: `${file.name} exceeds 2MB limit`,
                 });
-                return false;
+                setProfilePhotos([]);
+                return;
             }
-            return true;
-        });
-        setProfilePhotos(validFiles);
+            setProfilePhotos([file]);
+        } else {
+            setProfilePhotos([]);
+        }
     };
 
     // Handle documents upload with validation
@@ -551,19 +554,18 @@ const ServiceGiverForm = () => {
 
                 {/* Profile Photo Upload - full width */}
                 <div className="field" style={{ marginTop: 18 }}>
-                    <label htmlFor="profile_photo">Profile Photos</label>
+                    <label htmlFor="profile_photo">Profile Photo</label>
                     <FileUpload
                         mode="basic"
                         name="profile_photos"
                         accept="image/*"
-                        multiple
                         maxFileSize={2000000}
-                        chooseLabel="Upload Photos"
+                        chooseLabel="Upload Photo"
                         onSelect={(e) => onProfilePhotoUpload(e)}
                     />
                     <small>
-                        Max file size: 2MB per image. Allowed formats: JPEG,
-                        PNG. You can select multiple images.
+                        Max file size: 2MB. Allowed formats: JPEG, PNG. Only one
+                        image allowed.
                     </small>
                     <div
                         style={{
@@ -573,9 +575,8 @@ const ServiceGiverForm = () => {
                             marginTop: 8,
                         }}
                     >
-                        {profilePhotos.map((file, idx) => (
+                        {profilePhotos[0] && (
                             <div
-                                key={idx}
                                 style={{
                                     display: "flex",
                                     alignItems: "center",
@@ -585,7 +586,7 @@ const ServiceGiverForm = () => {
                                 }}
                             >
                                 <span style={{ fontSize: 13, marginRight: 6 }}>
-                                    {file.name}
+                                    {profilePhotos[0].name}
                                 </span>
                                 <Button
                                     icon="pi pi-times"
@@ -596,17 +597,11 @@ const ServiceGiverForm = () => {
                                         height: 22,
                                     }}
                                     type="button"
-                                    onClick={() => {
-                                        setProfilePhotos(
-                                            profilePhotos.filter(
-                                                (_, i) => i !== idx
-                                            )
-                                        );
-                                    }}
-                                    aria-label={`Remove ${file.name}`}
+                                    onClick={() => setProfilePhotos([])}
+                                    aria-label={`Remove ${profilePhotos[0].name}`}
                                 />
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
 
