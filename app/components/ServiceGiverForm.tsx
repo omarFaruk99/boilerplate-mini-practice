@@ -79,10 +79,11 @@ const ServiceGiverForm = () => {
                 }
             });
 
-            // Append multiple images
-            profilePhotos.forEach((file, index) => {
-                formData.append(`profile_photos[${index}]`, file);
-            });
+            // Append profile photo (single file, correct key)
+            if (profilePhotos[0]) {
+                formData.append("profile_photo", profilePhotos[0]);
+            }
+            // Append documents (multiple files)
             documents.forEach((file, index) => {
                 formData.append(`documents[${index}]`, file);
             });
