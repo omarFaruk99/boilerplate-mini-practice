@@ -1,11 +1,15 @@
 "use client";
+import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
-import React from "react";
+import { Toast } from "primereact/toast";
+import React, { useRef } from "react";
 import { useServiceGivers } from "../hooks/useServiceGivers";
 
 const ServiceGiversList: React.FC = () => {
-    const { data, isLoading, isError, error } = useServiceGivers();
+    const { data, isLoading, isError, error, deleteMutation } =
+        useServiceGivers();
+    const toast = useRef<Toast>(null);
 
     const renderProfilePhoto = (rowData: any) => {
         // Use the correct environment variable for the API base URL
@@ -29,6 +33,36 @@ const ServiceGiversList: React.FC = () => {
         );
     };
 
+    const handleDelete = (id: number) => {
+        deleteMutation.mutate(id, {
+            onSuccess: () => {
+                toast.current?.show({
+                    severity: "success",
+                    summary: "Success",
+                    detail: "Service Giver deleted successfully!",
+                });
+            },
+            onError: () => {
+                toast.current?.show({
+                    severity: "error",
+                    summary: "Error",
+                    detail: "Failed to delete service giver.",
+                });
+            },
+        });
+    };
+
+    const renderDeleteButton = (rowData: any) => {
+        return (
+            <Button
+                icon="pi pi-trash"
+                className="p-button-rounded p-button-danger p-button-sm"
+                onClick={() => handleDelete(rowData.id)}
+                aria-label="Delete"
+            />
+        );
+    };
+
     if (isLoading) return <div>Loading service givers...</div>;
     if (isError) return <div>Error: {(error as Error).message}</div>;
     if (!data || !data.data.length) return <div>No service givers found.</div>;
@@ -36,6 +70,7 @@ const ServiceGiversList: React.FC = () => {
     console.log("data=========", data);
     return (
         <div>
+            <Toast ref={toast} />
             <h2>Service Givers</h2>
             <DataTable
                 value={data.data}
@@ -54,6 +89,11 @@ const ServiceGiversList: React.FC = () => {
                 <Column field="email" header="Email" />
                 <Column field="hourly_rate" header="Hourly Rate" />
                 <Column field="status" header="Status" />
+                <Column
+                    header="Actions"
+                    body={renderDeleteButton}
+                    style={{ width: "80px" }}
+                />
             </DataTable>
         </div>
     );

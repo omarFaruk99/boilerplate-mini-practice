@@ -38,3 +38,7 @@ export const fetchServiceGivers = async (): Promise<ServiceGiversResponse> => {
     const response = await axios.get(`${API_BASE}/api/service-givers`);
     return response.data;
 };
+
+export const deleteServiceGiver = async (id: number): Promise<void> => {
+    await axios.delete(`${API_BASE}/api/service-givers/${id}`);
+};
