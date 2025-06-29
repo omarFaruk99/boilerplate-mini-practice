@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
@@ -10,6 +11,7 @@ const ServiceGiversList: React.FC = () => {
     const { data, isLoading, isError, error, deleteMutation } =
         useServiceGivers();
     const toast = useRef<Toast>(null);
+    const router = useRouter();
 
     const renderProfilePhoto = (rowData: any) => {
         // Use the correct environment variable for the API base URL
@@ -20,16 +22,26 @@ const ServiceGiversList: React.FC = () => {
                 : `${baseUrl}/${rowData.profile_photo}`
             : "/default-profile.png"; // fallback image
         return (
-            <img
-                src={photoUrl}
-                alt={rowData.full_name}
-                style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                }}
-            />
+            <a
+                href={photoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Click to preview"
+            >
+                <img
+                    src={photoUrl}
+                    alt={rowData.full_name}
+                    style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        cursor: "pointer",
+                        border: "1px solid #eee",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                    }}
+                />
+            </a>
         );
     };
 
@@ -63,6 +75,17 @@ const ServiceGiversList: React.FC = () => {
         );
     };
 
+    const renderEditButton = (rowData: any) => {
+        return (
+            <Button
+                icon="pi pi-pencil"
+                className="p-button-rounded p-button-info p-button-sm"
+                onClick={() => router.push(`/edit-service/${rowData.id}`)}
+                aria-label="Edit"
+            />
+        );
+    };
+
     if (isLoading) return <div>Loading service givers...</div>;
     if (isError) return <div>Error: {(error as Error).message}</div>;
     if (!data || !data.data.length) return <div>No service givers found.</div>;
@@ -91,8 +114,13 @@ const ServiceGiversList: React.FC = () => {
                 <Column field="status" header="Status" />
                 <Column
                     header="Actions"
-                    body={renderDeleteButton}
-                    style={{ width: "80px" }}
+                    body={(rowData) => (
+                        <div className="flex gap-2">
+                            {renderEditButton(rowData)}
+                            {renderDeleteButton(rowData)}
+                        </div>
+                    )}
+                    style={{ width: "120px" }}
                 />
             </DataTable>
         </div>

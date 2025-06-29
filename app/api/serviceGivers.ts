@@ -42,3 +42,21 @@ export const fetchServiceGivers = async (): Promise<ServiceGiversResponse> => {
 export const deleteServiceGiver = async (id: number): Promise<void> => {
     await axios.delete(`${API_BASE}/api/service-givers/${id}`);
 };
+
+export const fetchServiceGiverById = async (
+    id: number
+): Promise<ServiceGiver> => {
+    const response = await axios.get(`${API_BASE}/api/service-givers/${id}`);
+    return response.data; // Fix: return response.data directly
+};
+
+export const updateServiceGiver = async (
+    id: number,
+    data: FormData
+): Promise<void> => {
+    await axios.post(`${API_BASE}/api/service-givers/${id}`, data, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+};

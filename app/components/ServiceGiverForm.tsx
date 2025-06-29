@@ -1,6 +1,8 @@
 "use client";
+import { updateServiceGiver } from "@/app/api/serviceGivers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import { Button } from "primereact/button";
 import { Checkbox } from "primereact/checkbox";
 import { Dropdown } from "primereact/dropdown";
@@ -11,12 +13,13 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { MultiSelect } from "primereact/multiselect";
 import { Toast } from "primereact/toast";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 // Zod Schema
 const serviceGiverSchema = z.object({
+    id: z.number().optional(), // <-- Add id for edit mode
     full_name: z.string().min(2, "Full name must be at least 2 characters"),
     service_category: z.string().min(1, "Service category is required"),
     subcategory: z.string().optional(),
@@ -39,8 +42,17 @@ const serviceGiverSchema = z.object({
 
 type ServiceGiverFormData = z.infer<typeof serviceGiverSchema>;
 
-const ServiceGiverForm = () => {
+interface ServiceGiverFormProps {
+    initialData?: ServiceGiverFormData;
+    isEditMode?: boolean;
+}
+
+const ServiceGiverForm = ({
+    initialData,
+    isEditMode = false,
+}: ServiceGiverFormProps) => {
     const toast = useRef<Toast>(null);
+    const router = useRouter();
     // Change to array for multiple images
     const [profilePhotos, setProfilePhotos] = useState<File[]>([]);
     const [documents, setDocuments] = useState<File[]>([]);
@@ -53,7 +65,29 @@ const ServiceGiverForm = () => {
         formState: { errors },
     } = useForm<ServiceGiverFormData>({
         resolver: zodResolver(serviceGiverSchema),
+        defaultValues: initialData,
     });
+
+    // Fix: Reset form when initialData changes (for edit mode)
+    useEffect(() => {
+        if (initialData) {
+            // Convert string numbers to numbers for numeric fields
+            const patchedData = {
+                ...initialData,
+                hourly_rate: initialData.hourly_rate
+                    ? Number(initialData.hourly_rate)
+                    : undefined,
+                service_rating: initialData.service_rating
+                    ? Number(initialData.service_rating)
+                    : undefined,
+                years_of_experience: initialData.years_of_experience
+                    ? Number(initialData.years_of_experience)
+                    : undefined,
+            };
+            reset(patchedData);
+            // Optionally, set profile photo and documents preview if needed
+        }
+    }, [initialData, reset]);
 
     const onSubmit = async (data: ServiceGiverFormData) => {
         try {
@@ -64,6 +98,7 @@ const ServiceGiverForm = () => {
                 if (
                     value !== undefined &&
                     value !== null &&
+                    !(key === "profile_photo" || key === "documents") &&
                     !(value instanceof File)
                 ) {
                     if (key === "background_check") {
@@ -79,40 +114,63 @@ const ServiceGiverForm = () => {
                 }
             });
 
-            // Append profile photo (single file, correct key)
+            // Only append profile photo if a new file is selected
             if (profilePhotos[0]) {
                 formData.append("profile_photo", profilePhotos[0]);
             }
-            // Append documents (multiple files)
-            documents.forEach((file, index) => {
-                formData.append(`documents[${index}]`, file);
-            });
+            // Only append documents if new files are selected
+            if (documents.length > 0) {
+                documents.forEach((file, index) => {
+                    formData.append(`documents[${index}]`, file);
+                });
+            }
 
             // Debug output (fix: use forEach for compatibility)
             formData.forEach((value, key) => {
                 console.log(key, value);
             });
 
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_BASE}/api/service-givers`,
-                formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
+            if (isEditMode && initialData?.id) {
+                try {
+                    await updateServiceGiver(initialData.id, formData);
+                    toast.current?.show({
+                        severity: "success",
+                        summary: "Success",
+                        detail: "Service Giver updated!",
+                    });
+                    setTimeout(() => {
+                        router.push("/");
+                    }, 800); // Give user time to see the toast
+                } catch (error) {
+                    console.error("Update failed:", error);
+                    toast.current?.show({
+                        severity: "error",
+                        summary: "Error",
+                        detail: "Failed to update. Please try again.",
+                    });
                 }
-            );
-
-            toast.current?.show({
-                severity: "success",
-                summary: "Success",
-                detail: "Service Giver added successfully!",
-            });
-
-            // Reset form
-            reset();
-            setProfilePhotos([]);
-            setDocuments([]);
+            } else {
+                await axios.post(
+                    `${process.env.NEXT_PUBLIC_API_BASE}/api/service-givers`,
+                    formData,
+                    {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                        },
+                    }
+                );
+                toast.current?.show({
+                    severity: "success",
+                    summary: "Success",
+                    detail: "Service Giver added successfully!",
+                });
+            }
+            // Reset form if not in edit mode
+            if (!isEditMode) {
+                reset();
+                setProfilePhotos([]);
+                setDocuments([]);
+            }
         } catch (error: any) {
             console.error("Submission error:", error);
             toast.current?.show({
