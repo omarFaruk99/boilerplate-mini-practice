@@ -1,6 +1,12 @@
 "use client";
+import { baseUrl } from "@/app/utilis/webinfo";
 import type { AppTopbarRef, ChildContainerProps } from "@/types";
-import {usePathname, useRouter, useSearchParams, redirect} from "next/navigation";
+import {
+    redirect,
+    usePathname,
+    useRouter,
+    useSearchParams,
+} from "next/navigation";
 import PrimeReact from "primereact/api";
 import {
     useEventListener,
@@ -15,8 +21,6 @@ import AppProfileSidebar from "./AppProfileSidebar";
 import AppSidebar from "./AppSidebar";
 import AppTopbar from "./AppTopbar";
 import { LayoutContext } from "./context/layoutcontext";
-import {baseUrl} from "@/app/utilis/webinfo";
-
 
 const Layout = (props: ChildContainerProps) => {
     const {
@@ -28,7 +32,7 @@ const Layout = (props: ChildContainerProps) => {
         isHorizontal,
         isDesktop,
         setAccessToken,
-        accessToken
+        accessToken,
     } = useContext(LayoutContext);
     const topbarRef = useRef<AppTopbarRef>(null);
     const sidebarRef = useRef<HTMLDivElement>(null);
@@ -57,7 +61,6 @@ const Layout = (props: ChildContainerProps) => {
 
     const router = useRouter();
 
-
     // Handle Refresh Token
     useEffect(() => {
         const isLogin: any = localStorage?.getItem("isLogin");
@@ -71,7 +74,7 @@ const Layout = (props: ChildContainerProps) => {
                 if (res.ok) {
                     const resData = await res.json();
 
-                    const {access_token} = resData?.data
+                    const { access_token } = resData?.data;
                     newToken = access_token;
                     setAccessToken(access_token);
                 } else {
@@ -97,7 +100,6 @@ const Layout = (props: ChildContainerProps) => {
         const interval = setInterval(handleRefresh, 840000); // 14 minutes
         return () => clearInterval(interval);
     }, [accessToken, router]);
-
 
     const [bindDocumentResizeListener, unbindDocumentResizeListener] =
         useResizeListener({
@@ -253,8 +255,6 @@ const Layout = (props: ChildContainerProps) => {
         "layout-sidebar-anchored": layoutState.anchored,
     });
 
-
-
     return (
         <React.Fragment>
             <div className={classNames("layout-container", containerClass)}>
@@ -279,6 +279,5 @@ const Layout = (props: ChildContainerProps) => {
         </React.Fragment>
     );
 };
-
 
 export default Layout;

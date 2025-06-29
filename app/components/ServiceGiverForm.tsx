@@ -41,7 +41,8 @@ type ServiceGiverFormData = z.infer<typeof serviceGiverSchema>;
 
 const ServiceGiverForm = () => {
     const toast = useRef<Toast>(null);
-    const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+    // Change to array for multiple images
+    const [profilePhotos, setProfilePhotos] = useState<File[]>([]);
     const [documents, setDocuments] = useState<File[]>([]);
 
     const {
@@ -78,10 +79,10 @@ const ServiceGiverForm = () => {
                 }
             });
 
-            // Append files separately
-            if (profilePhoto) {
-                formData.append("profile_photo", profilePhoto);
-            }
+            // Append multiple images
+            profilePhotos.forEach((file, index) => {
+                formData.append(`profile_photos[${index}]`, file);
+            });
             documents.forEach((file, index) => {
                 formData.append(`documents[${index}]`, file);
             });
@@ -109,7 +110,7 @@ const ServiceGiverForm = () => {
 
             // Reset form
             reset();
-            setProfilePhoto(null);
+            setProfilePhotos([]);
             setDocuments([]);
         } catch (error: any) {
             console.error("Submission error:", error);
@@ -121,21 +122,21 @@ const ServiceGiverForm = () => {
         }
     };
 
-    // Handle profile photo upload with validation
+    // Handle multiple profile photo uploads with validation
     const onProfilePhotoUpload = (event: FileUploadSelectEvent) => {
-        const file = event.files && event.files[0];
-        if (!file) return;
-
-        if (file.size > 2 * 1024 * 1024) {
-            toast.current?.show({
-                severity: "error",
-                summary: "File Too Large",
-                detail: "Maximum size is 2MB",
-            });
-            return;
-        }
-
-        setProfilePhoto(file);
+        const files = event.files || [];
+        const validFiles = files.filter((file) => {
+            if (file.size > 2 * 1024 * 1024) {
+                toast.current?.show({
+                    severity: "error",
+                    summary: "File Too Large",
+                    detail: `${file.name} exceeds 2MB limit`,
+                });
+                return false;
+            }
+            return true;
+        });
+        setProfilePhotos(validFiles);
     };
 
     // Handle documents upload with validation
@@ -194,309 +195,423 @@ const ServiceGiverForm = () => {
     ];
 
     return (
-        <div className="card p-fluid">
+        <div
+            className="card p-fluid modern-form"
+            style={{
+                maxWidth: 900,
+                margin: "32px auto",
+                borderRadius: 16,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
+                background: "#fff",
+                padding: 32,
+            }}
+        >
             <Toast ref={toast} />
-            <h2>Add New Service Giver</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="p-grid">
-                {/* Full Name */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="full_name">Full Name*</label>
-                    <InputText
-                        id="full_name"
-                        {...register("full_name", {
-                            required: "Full Name is required",
-                        })}
-                    />
-                    {errors.full_name && (
-                        <small className="p-error">
-                            {errors.full_name.message}
-                        </small>
-                    )}
-                </div>
-
-                {/* Service Category */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="service_category">Service Category*</label>
-                    <InputText
-                        id="service_category"
-                        {...register("service_category", {
-                            required: "Service Category is required",
-                        })}
-                    />
-                    {errors.service_category && (
-                        <small className="p-error">
-                            {errors.service_category.message}
-                        </small>
-                    )}
-                </div>
-
-                {/* Subcategory */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="subcategory">Subcategory</label>
-                    <InputText id="subcategory" {...register("subcategory")} />
-                </div>
-
-                {/* Skills */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="skills">Skills</label>
-                    <Controller
-                        name="skills"
-                        control={control}
-                        defaultValue={[]}
-                        render={({ field }) => (
-                            <MultiSelect
-                                value={field.value}
-                                onChange={(e) => field.onChange(e.value)}
-                                options={skillOptions}
-                                optionLabel="label"
-                                placeholder="Select Skills"
-                            />
+            <h2 style={{ fontWeight: 700, marginBottom: 24 }}>
+                Add New Service Giver
+            </h2>
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <div
+                    className="p-grid"
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                            "repeat(auto-fit, minmax(260px, 1fr))",
+                        gap: 20,
+                    }}
+                >
+                    {/* Full Name */}
+                    <div className="field">
+                        <label htmlFor="full_name">Full Name*</label>
+                        <InputText
+                            id="full_name"
+                            {...register("full_name", {
+                                required: "Full Name is required",
+                            })}
+                            style={{ borderRadius: 8, fontSize: 15 }}
+                        />
+                        {errors.full_name && (
+                            <small className="p-error">
+                                {errors.full_name.message}
+                            </small>
                         )}
-                    />
-                </div>
+                    </div>
 
-                {/* Years of Experience */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="years_of_experience">
-                        Years of Experience
-                    </label>
-                    <Controller
-                        name="years_of_experience"
-                        control={control}
-                        render={({ field }) => (
-                            <InputNumber
-                                id="years_of_experience"
-                                min={0}
-                                value={field.value}
-                                onValueChange={(e) => field.onChange(e.value)}
-                                onBlur={field.onBlur}
-                            />
+                    {/* Service Category */}
+                    <div className="field">
+                        <label htmlFor="service_category">
+                            Service Category*
+                        </label>
+                        <InputText
+                            id="service_category"
+                            {...register("service_category", {
+                                required: "Service Category is required",
+                            })}
+                            style={{ borderRadius: 8, fontSize: 15 }}
+                        />
+                        {errors.service_category && (
+                            <small className="p-error">
+                                {errors.service_category.message}
+                            </small>
                         )}
-                    />
-                </div>
+                    </div>
 
-                {/* Availability */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="availability">Availability</label>
-                    <Controller
-                        name="availability"
-                        control={control}
-                        render={({ field }) => (
-                            <MultiSelect
-                                id="availability"
-                                options={availabilityOptions}
-                                optionLabel="label"
-                                placeholder="Select Availability"
-                                {...field}
-                            />
-                        )}
-                    />
-                </div>
+                    {/* Subcategory */}
+                    <div className="field">
+                        <label htmlFor="subcategory">Subcategory</label>
+                        <InputText
+                            id="subcategory"
+                            {...register("subcategory")}
+                            style={{ borderRadius: 8, fontSize: 15 }}
+                        />
+                    </div>
 
-                {/* Location */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="location">Location</label>
-                    <InputText id="location" {...register("location")} />
-                </div>
-
-                {/* Phone Number */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="phone_number">Phone Number*</label>
-                    <InputText
-                        id="phone_number"
-                        {...register("phone_number", {
-                            required: "Phone Number is required",
-                        })}
-                    />
-                    {errors.phone_number && (
-                        <small className="p-error">
-                            {errors.phone_number.message}
-                        </small>
-                    )}
-                </div>
-
-                {/* Email */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="email">Email*</label>
-                    <InputText
-                        id="email"
-                        type="email"
-                        {...register("email", {
-                            required: "Email is required",
-                        })}
-                    />
-                    {errors.email && (
-                        <small className="p-error">
-                            {errors.email.message}
-                        </small>
-                    )}
-                </div>
-
-                {/* Hourly Rate */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="hourly_rate">Hourly Rate*</label>
-                    <Controller
-                        name="hourly_rate"
-                        control={control}
-                        rules={{ required: "Hourly Rate is required" }}
-                        render={({ field }) => (
-                            <InputNumber
-                                id="hourly_rate"
-                                mode="currency"
-                                currency="USD"
-                                value={field.value}
-                                onValueChange={(e) => field.onChange(e.value)}
-                                onBlur={field.onBlur}
-                            />
-                        )}
-                    />
-                    {errors.hourly_rate && (
-                        <small className="p-error">
-                            {errors.hourly_rate.message}
-                        </small>
-                    )}
-                </div>
-
-                {/* Service Rating */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="service_rating">Service Rating (0-5)</label>
-                    <Controller
-                        name="service_rating"
-                        control={control}
-                        render={({ field }) => (
-                            <InputNumber
-                                id="service_rating"
-                                min={0}
-                                max={5}
-                                value={field.value}
-                                onValueChange={(e) => field.onChange(e.value)}
-                                onBlur={field.onBlur}
-                            />
-                        )}
-                    />
-                </div>
-
-                {/* Background Check */}
-                <div className="p-col-12 field">
-                    <label htmlFor="background_check">Background Check</label>
-                    <div className="flex align-items-center">
+                    {/* Skills */}
+                    <div className="field">
+                        <label htmlFor="skills">Skills</label>
                         <Controller
-                            name="background_check"
+                            name="skills"
                             control={control}
-                            defaultValue={false}
+                            defaultValue={[]}
                             render={({ field }) => (
-                                <Checkbox
-                                    inputId="background_check"
-                                    checked={!!field.value}
-                                    onChange={(e) => field.onChange(e.checked)}
+                                <MultiSelect
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    options={skillOptions}
+                                    optionLabel="label"
+                                    placeholder="Select Skills"
+                                    style={{ borderRadius: 8, fontSize: 15 }}
                                 />
                             )}
                         />
-                        <label htmlFor="background_check" className="ml-2">
-                            Has background check
+                    </div>
+
+                    {/* Years of Experience */}
+                    <div className="field">
+                        <label htmlFor="years_of_experience">
+                            Years of Experience
                         </label>
+                        <Controller
+                            name="years_of_experience"
+                            control={control}
+                            render={({ field }) => (
+                                <InputNumber
+                                    id="years_of_experience"
+                                    min={0}
+                                    value={field.value}
+                                    onValueChange={(e) =>
+                                        field.onChange(e.value)
+                                    }
+                                    onBlur={field.onBlur}
+                                    style={{
+                                        borderRadius: 8,
+                                        fontSize: 15,
+                                        width: "100%",
+                                    }}
+                                />
+                            )}
+                        />
+                    </div>
+
+                    {/* Availability */}
+                    <div className="field">
+                        <label htmlFor="availability">Availability</label>
+                        <Controller
+                            name="availability"
+                            control={control}
+                            render={({ field }) => (
+                                <MultiSelect
+                                    id="availability"
+                                    options={availabilityOptions}
+                                    optionLabel="label"
+                                    placeholder="Select Availability"
+                                    {...field}
+                                    style={{ borderRadius: 8, fontSize: 15 }}
+                                />
+                            )}
+                        />
+                    </div>
+
+                    {/* Location */}
+                    <div className="field">
+                        <label htmlFor="location">Location</label>
+                        <InputText
+                            id="location"
+                            {...register("location")}
+                            style={{ borderRadius: 8, fontSize: 15 }}
+                        />
+                    </div>
+
+                    {/* Phone Number */}
+                    <div className="field">
+                        <label htmlFor="phone_number">Phone Number*</label>
+                        <InputText
+                            id="phone_number"
+                            {...register("phone_number", {
+                                required: "Phone Number is required",
+                            })}
+                            style={{ borderRadius: 8, fontSize: 15 }}
+                        />
+                        {errors.phone_number && (
+                            <small className="p-error">
+                                {errors.phone_number.message}
+                            </small>
+                        )}
+                    </div>
+
+                    {/* Email */}
+                    <div className="field">
+                        <label htmlFor="email">Email*</label>
+                        <InputText
+                            id="email"
+                            type="email"
+                            {...register("email", {
+                                required: "Email is required",
+                            })}
+                            style={{ borderRadius: 8, fontSize: 15 }}
+                        />
+                        {errors.email && (
+                            <small className="p-error">
+                                {errors.email.message}
+                            </small>
+                        )}
+                    </div>
+
+                    {/* Hourly Rate */}
+                    <div className="field">
+                        <label htmlFor="hourly_rate">Hourly Rate*</label>
+                        <Controller
+                            name="hourly_rate"
+                            control={control}
+                            rules={{ required: "Hourly Rate is required" }}
+                            render={({ field }) => (
+                                <InputNumber
+                                    id="hourly_rate"
+                                    mode="currency"
+                                    currency="USD"
+                                    value={field.value}
+                                    onValueChange={(e) =>
+                                        field.onChange(e.value)
+                                    }
+                                    onBlur={field.onBlur}
+                                    style={{
+                                        borderRadius: 8,
+                                        fontSize: 15,
+                                        width: "100%",
+                                    }}
+                                />
+                            )}
+                        />
+                        {errors.hourly_rate && (
+                            <small className="p-error">
+                                {errors.hourly_rate.message}
+                            </small>
+                        )}
+                    </div>
+
+                    {/* Service Rating */}
+                    <div className="field">
+                        <label htmlFor="service_rating">
+                            Service Rating (0-5)
+                        </label>
+                        <Controller
+                            name="service_rating"
+                            control={control}
+                            render={({ field }) => (
+                                <InputNumber
+                                    id="service_rating"
+                                    min={0}
+                                    max={5}
+                                    value={field.value}
+                                    onValueChange={(e) =>
+                                        field.onChange(e.value)
+                                    }
+                                    onBlur={field.onBlur}
+                                    style={{
+                                        borderRadius: 8,
+                                        fontSize: 15,
+                                        width: "100%",
+                                    }}
+                                />
+                            )}
+                        />
+                    </div>
+
+                    {/* Background Check */}
+                    <div className="field" style={{ gridColumn: "span 1" }}>
+                        <label htmlFor="background_check">
+                            Background Check
+                        </label>
+                        <div className="flex align-items-center">
+                            <Controller
+                                name="background_check"
+                                control={control}
+                                defaultValue={false}
+                                render={({ field }) => (
+                                    <Checkbox
+                                        inputId="background_check"
+                                        checked={!!field.value}
+                                        onChange={(e) =>
+                                            field.onChange(e.checked)
+                                        }
+                                    />
+                                )}
+                            />
+                            <label htmlFor="background_check" className="ml-2">
+                                Has background check
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Languages */}
+                    <div className="field">
+                        <label htmlFor="languages">Languages</label>
+                        <Controller
+                            name="languages"
+                            control={control}
+                            render={({ field }) => (
+                                <MultiSelect
+                                    id="languages"
+                                    options={languageOptions}
+                                    optionLabel="label"
+                                    placeholder="Select Languages"
+                                    {...field}
+                                    style={{ borderRadius: 8, fontSize: 15 }}
+                                />
+                            )}
+                        />
+                    </div>
+
+                    {/* Preferred Contact Method */}
+                    <div className="field">
+                        <label htmlFor="preferred_contact_method">
+                            Preferred Contact Method*
+                        </label>
+                        <Controller
+                            name="preferred_contact_method"
+                            control={control}
+                            rules={{ required: "Contact Method is required" }}
+                            render={({ field }) => (
+                                <Dropdown
+                                    id="preferred_contact_method"
+                                    options={contactMethods}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Select a method"
+                                    {...field}
+                                    style={{ borderRadius: 8, fontSize: 15 }}
+                                />
+                            )}
+                        />
+                        {errors.preferred_contact_method && (
+                            <small className="p-error">
+                                {errors.preferred_contact_method.message}
+                            </small>
+                        )}
+                    </div>
+
+                    {/* Status */}
+                    <div className="field">
+                        <label htmlFor="status">Status*</label>
+                        <Controller
+                            name="status"
+                            control={control}
+                            rules={{ required: "Status is required" }}
+                            render={({ field }) => (
+                                <Dropdown
+                                    id="status"
+                                    options={statusOptions}
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Select status"
+                                    {...field}
+                                    style={{ borderRadius: 8, fontSize: 15 }}
+                                />
+                            )}
+                        />
+                        {errors.status && (
+                            <small className="p-error">
+                                {errors.status.message}
+                            </small>
+                        )}
                     </div>
                 </div>
 
-                {/* Languages */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="languages">Languages</label>
-                    <Controller
-                        name="languages"
-                        control={control}
-                        render={({ field }) => (
-                            <MultiSelect
-                                id="languages"
-                                options={languageOptions}
-                                optionLabel="label"
-                                placeholder="Select Languages"
-                                {...field}
-                            />
-                        )}
-                    />
-                </div>
-
-                {/* Preferred Contact Method */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="preferred_contact_method">
-                        Preferred Contact Method*
-                    </label>
-                    <Controller
-                        name="preferred_contact_method"
-                        control={control}
-                        rules={{ required: "Contact Method is required" }}
-                        render={({ field }) => (
-                            <Dropdown
-                                id="preferred_contact_method"
-                                options={contactMethods}
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Select a method"
-                                {...field}
-                            />
-                        )}
-                    />
-                    {errors.preferred_contact_method && (
-                        <small className="p-error">
-                            {errors.preferred_contact_method.message}
-                        </small>
-                    )}
-                </div>
-
-                {/* Status */}
-                <div className="p-col-12 p-md-6 field">
-                    <label htmlFor="status">Status*</label>
-                    <Controller
-                        name="status"
-                        control={control}
-                        rules={{ required: "Status is required" }}
-                        render={({ field }) => (
-                            <Dropdown
-                                id="status"
-                                options={statusOptions}
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Select status"
-                                {...field}
-                            />
-                        )}
-                    />
-                    {errors.status && (
-                        <small className="p-error">
-                            {errors.status.message}
-                        </small>
-                    )}
-                </div>
-
-                {/* Notes */}
-                <div className="p-col-12 field">
+                {/* Notes - full width */}
+                <div className="field" style={{ marginTop: 18 }}>
                     <label htmlFor="notes">Notes</label>
                     <InputTextarea
                         id="notes"
                         rows={3}
                         {...register("notes")}
                         placeholder="Additional notes about the service giver..."
+                        style={{ borderRadius: 8, fontSize: 15 }}
                     />
                 </div>
 
-                {/* Profile Photo Upload (fix: use onSelect instead of onUpload, remove auto) */}
-                <div className="p-col-12 field">
-                    <label htmlFor="profile_photo">Profile Photo</label>
+                {/* Profile Photo Upload - full width */}
+                <div className="field" style={{ marginTop: 18 }}>
+                    <label htmlFor="profile_photo">Profile Photos</label>
                     <FileUpload
                         mode="basic"
-                        name="profile_photo"
+                        name="profile_photos"
                         accept="image/*"
+                        multiple
                         maxFileSize={2000000}
-                        chooseLabel="Upload Photo"
+                        chooseLabel="Upload Photos"
                         onSelect={(e) => onProfilePhotoUpload(e)}
                     />
                     <small>
-                        Max file size: 2MB. Allowed formats: JPEG, PNG.
+                        Max file size: 2MB per image. Allowed formats: JPEG,
+                        PNG. You can select multiple images.
                     </small>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            marginTop: 8,
+                        }}
+                    >
+                        {profilePhotos.map((file, idx) => (
+                            <div
+                                key={idx}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    background: "#f4f4f4",
+                                    borderRadius: 4,
+                                    padding: "2px 8px",
+                                }}
+                            >
+                                <span style={{ fontSize: 13, marginRight: 6 }}>
+                                    {file.name}
+                                </span>
+                                <Button
+                                    icon="pi pi-times"
+                                    className="p-button-text p-button-danger p-button-sm"
+                                    style={{
+                                        padding: 0,
+                                        width: 22,
+                                        height: 22,
+                                    }}
+                                    type="button"
+                                    onClick={() => {
+                                        setProfilePhotos(
+                                            profilePhotos.filter(
+                                                (_, i) => i !== idx
+                                            )
+                                        );
+                                    }}
+                                    aria-label={`Remove ${file.name}`}
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Documents Upload (fix: use onSelect instead of onUpload, remove auto) */}
-                <div className="p-col-12 field">
+                {/* Documents Upload - full width */}
+                <div className="field" style={{ marginTop: 18 }}>
                     <label htmlFor="documents">
                         Documents (PDF, DOC, DOCX)
                     </label>
@@ -510,11 +625,66 @@ const ServiceGiverForm = () => {
                         onSelect={(e) => onDocumentsUpload(e)}
                     />
                     <small>Max file size: 5MB per file. Max files: 5.</small>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            marginTop: 8,
+                        }}
+                    >
+                        {documents.map((file, idx) => (
+                            <div
+                                key={idx}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    background: "#f4f4f4",
+                                    borderRadius: 4,
+                                    padding: "2px 8px",
+                                }}
+                            >
+                                <span style={{ fontSize: 13, marginRight: 6 }}>
+                                    {file.name}
+                                </span>
+                                <Button
+                                    icon="pi pi-times"
+                                    className="p-button-text p-button-danger p-button-sm"
+                                    style={{
+                                        padding: 0,
+                                        width: 22,
+                                        height: 22,
+                                    }}
+                                    type="button"
+                                    onClick={() => {
+                                        setDocuments(
+                                            documents.filter(
+                                                (_, i) => i !== idx
+                                            )
+                                        );
+                                    }}
+                                    aria-label={`Remove ${file.name}`}
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Submit Button */}
-                <div className="p-col-12 field">
-                    <Button type="submit" label="Submit" className="mt-3" />
+                {/* Submit Button - full width */}
+                <div
+                    className="field"
+                    style={{ marginTop: 28, textAlign: "right" }}
+                >
+                    <Button
+                        type="submit"
+                        label="Submit"
+                        className="mt-3 p-button-rounded p-button-lg"
+                        style={{
+                            padding: "10px 32px",
+                            fontSize: 16,
+                            borderRadius: 8,
+                        }}
+                    />
                 </div>
             </form>
         </div>
